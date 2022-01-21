@@ -1,4 +1,4 @@
-from flask import Flask, request, abort
+from flask import Flask, request, abort, jsonify
 import json
 from functools import wraps
 from jose import jwt
@@ -24,8 +24,7 @@ def verify_decode_jwt(token):
     if 'kid' not in unverified_header:
         raise AuthError({
             'code': 'invalid_header',
-            'description': 'Authorization malformed.'
-        }, 401)
+            'description': 'Authorization malformed.'}, 401)
 
     for key in jwks['keys']:
         if key['kid'] == unverified_header['kid']:
@@ -51,25 +50,21 @@ def verify_decode_jwt(token):
         except jwt.ExpiredSignatureError:
             raise AuthError({
                 'code': 'token_expired',
-                'description': 'Token expired.'
-            }, 401)
+                'description': 'Token expired.'}, 401)
 
         except jwt.JWTClaimsError:
             raise AuthError({
                 'code': 'invalid_claims',
-                'description': 'Incorrect claims. Please, check the audience and issuer.'
-            }, 401)
+                'description': 'Incorrect claims. Please, check the audience and issuer.'}, 401)
 
         except Exception:
             raise AuthError({
                 'code': 'invalid_header',
-                'description': 'Unable to parse authentication token.'
-            }, 400)
+                'description': 'Unable to parse authentication token.'}, 400)
 
     raise AuthError({
         'code': 'invalid_header',
-        'description': 'Unable to find the appropriate key.'
-    }, 400)
+        'description': 'Unable to find the appropriate key.'}, 400)
 
 
 def get_token_auth_header():
@@ -120,6 +115,13 @@ def requires_auth(permission=''):
 
 
 app = Flask(__name__)
+
+
+@app.errorhandler(AuthError)
+def handle_auth_error(ex):
+    response = jsonify(ex.error)
+    response.status_code = ex.status_code
+    return response
 
 
 @app.route('/images')
